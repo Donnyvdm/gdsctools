@@ -21,7 +21,7 @@ import scipy
 import pylab
 import numpy as np
 
-from statsmodels.formula.api import OLS
+from statsmodels.formula.api import ols as OLS
 
 from easydev import Progress, AttrDict, do_profile
 
