@@ -172,7 +172,7 @@ class ANOVA(BaseModels): #Logging):
         # taking 99% of the time in this function and now takes about 50%
         #dd.masked_features = self.features.df.loc[indices, feature_name].values
         real_indices = self.ic50_dict[drug_id]['real_indices']
-        dd.masked_features = self.features.df[feature_name].values[real_indices]
+        dd.masked_features = np.nan_to_num(self.features.df[feature_name].values[real_indices])
 
         dd.masked_tissue = self.tissue_dict[drug_id]
         if self.features.found_msi:
