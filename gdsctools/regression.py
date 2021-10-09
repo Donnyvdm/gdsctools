@@ -618,6 +618,11 @@ class Regression(BaseModels):
 
         
         """
+
+        if show:
+            raise DeprecationWarning("Option show=True for Regression.dendrogram_coefficients has been deprecated")
+
+        show = False
         drugids = self.drugIds
         from easydev import Progress
         pb = Progress(len(drugids))
@@ -634,11 +639,6 @@ class Regression(BaseModels):
         # use drugid to keep same order as in the data
         dfall = pd.concat([d[i] for i in drugids], axis=1)
         dfall.columns = drugids
-
-        if show:
-            from biokit import heatmap
-            h = heatmap.Heatmap(dfall, cmap=cmap)
-            h.plot(num=1,colorbar_position="top left")
 
         if stacked is True:
             dfall = dfall.stack().reset_index()

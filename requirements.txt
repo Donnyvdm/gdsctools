@@ -9,6 +9,5 @@ jinja2
 statsmodels>=0.8.0
 scikit-learn>=0.18.2
 reports==0.3.1
-biokit==0.4.1
 colorlog
 xlrd

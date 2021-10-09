@@ -24,6 +24,7 @@ Provides readers to read the following formats
 - Drug Decoder table with :class:`DrugDecode`
 
 """
+from typing import Type
 import warnings
 
 from gdsctools.errors import GDSCToolsDuplicatedDrugError
@@ -254,19 +255,7 @@ class Reader(object):
         return True
 
     def _read_matrix_from_r(self, name):
-        """Required biokit. Will be removed"""
-        print("Reading matrix %s " % (name))
-        self.session.run("rnames = rownames(%s)" % name)
-        self.session.run("cnames = colnames(%s)" % name)
-        self.session.run("data = %s" % name)
-
-        cnames = self.session.cnames
-        rnames = self.session.rnames
-        data = self.session.data
-        df = pd.DataFrame(data=data.copy())
-        df.columns = [x.strip() for x in cnames]
-        df.index = [x.strip() for x in rnames]
-        return df
+        raise DeprecationWarning("Reading from R has been deprecated")
 
     def __str__(self):
         self.df.info()
@@ -953,72 +942,14 @@ class PANCAN(Reader):
 
     .. deprecated:: since v0.12
     """
-    def __init__(self, filename=None):
-        print('deprecated')
-        """if filename is None:
-            filename = easydev.get_share_file('gdsctools', 'data',
-                            'PANCAN_simple_MOBEM.rdata')
-        super(PANCAN, self).__init__(filename)
-        # Remove R dependencies
-        from biokit.rtools import RSession
-        self.session = RSession()
-        self.session.run('load("%s")' %self._filename)
-        self.df = self._read_matrix_from_r('MoBEM')
-        """
+    def __init__(self, *args, **kwargs):
+        raise DeprecationWarning("PANCAN Reader has been deprecated since v0.12")
+
 
 class Extra(Reader):
-    def __init__(self, filename="djvIC50v17v002-nowWithRMSE.rdata"):
-        super(Extra, self).__init__(filename)
-        print("Deprecated since v0.12")
-        # Remove R dependencies
-        from biokit.rtools import RSession
-        self.session = RSession()
-        self.session.run('load("%s")' %self._filename)
+    def __init__(self, *args, **kwargs):
+        raise DeprecationWarning("Extra Reader has been deprecated since v0.12")
 
-        # 3 identical matrices containing AUC, IC50 and
-        self.dfAUCv17= self._read_matrix_from_r('dfAUCv17')
-        self.dfIC50v17 = self._read_matrix_from_r('dfIC50v17')
-        # Residual
-        self.dfResv17 = self._read_matrix_from_r('dfResv17')
-
-        # This df holds the xmid/scale parameters for each cell line
-        # Can be visualised using the tools.Logistic class.
-        self.dfCL= self._read_matrix_from_r('dfCL')
-
-        # There is an extra matrix called MoBEM, which is the same as in the
-        # file
-
-    def hist_residuals(self, bins=100):
-        """Plot residuals across all drugs and cell lines"""
-        data = [x for x in self.dfResv17.fillna(0).values.flatten() if x != 0]
-        pylab.clf()
-        pylab.hist(data, bins=bins, normed=True)
-        pylab.grid(True)
-        pylab.xlabel('Residuals')
-        pylab.ylabel(r'\#')
-
-    def scatter(self):
-        from biokit.viz import scatter
-        s = scatter.ScatterHist(self.dfCL)
-        s.plot(kargs_histx={'color':'red', 'bins':20},
-                kargs_scatter={'alpha':0.9, 's':100, 'c':'b'},
-                kargs_histy={'color':'red', 'bins':20})
-
-    def hist_ic50(self, bins=100):
-        data = [x for x in self.dfIC50v17.fillna(0).values.flatten() if x != 0]
-        pylab.clf()
-        pylab.hist(data, bins=bins, normed=True)
-        pylab.grid(True)
-        pylab.xlabel('IC50')
-        pylab.ylabel(r'\#')
-
-    def hist_auc(self, bins=100):
-        data = [x for x in self.dfAUCv17.fillna(0).values.flatten() if x != 0]
-        pylab.clf()
-        pylab.hist(data, bins=bins, normed=True)
-        pylab.grid(True)
-        pylab.xlabel('AUC')
-        pylab.ylabel(r'\#')
 
 
 class DrugDecode(Reader):
