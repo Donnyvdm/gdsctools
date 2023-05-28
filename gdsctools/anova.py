@@ -268,7 +268,10 @@ class ANOVA(BaseModels): #Logging):
         # results. The ANOVA_results.txt obtained from SFTP
         # have different values meaning that the equal.var param
         # was set to False. Note that pvalue is stored at index 1
-        dd.ttest = self._get_ttest(dd.negatives, dd.positives)
+        if self.settings.do_ttest:
+            dd.ttest = self._get_ttest(dd.negatives, dd.positives)
+        else:
+            dd.ttest = None
         return dd
 
     def _get_ttest(self, sample1, sample2):
