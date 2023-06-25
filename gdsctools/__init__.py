@@ -55,7 +55,7 @@ from gdsctools.anova import ANOVA
 from gdsctools.anova_report import ANOVAReport
 from gdsctools.anova_results import ANOVAResults
 from gdsctools.settings import ANOVASettings
-from gdsctools.datasets import *
+# from gdsctools.datasets import *
 from gdsctools.volcano import VolcanoANOVA
 from gdsctools.cosmictools import COSMICInfo
 from gdsctools.tissues import TCGA

@@ -170,7 +170,7 @@ class ANOVA(BaseModels): #Logging):
         # This a is 5-6 times slower to use loc than the 2 lines of
         # code that follows, the creation of this masked_features was
         # taking 99% of the time in this function and now takes about 50%
-        #dd.masked_features = self.features.df.loc[indices, feature_name].values
+        # dd.masked_features = self.features.df.loc[indices, feature_name].values
         real_indices = self.ic50_dict[drug_id]['real_indices']
         dd.masked_features = np.nan_to_num(self.features.df[feature_name].values[real_indices])
 
@@ -608,6 +608,9 @@ class ANOVA(BaseModels): #Logging):
         an.anova_one_drug_one_feature_custom(1047, "ABCB1_mut", formula="Y ~ C(tissue) + C(msi) + feature")
 
         """
+        if self.settings.analysis_type == 'BASIC':
+            return {'feature': data_lm.f_pvalue}
+
         q, r = np.linalg.qr(data_lm.model.data.exog)
         effects = np.dot(q.T, data_lm.model.data.endog)
 
@@ -657,16 +660,16 @@ class ANOVA(BaseModels): #Logging):
             arr[1, 1] = 1
         else:
             raise NotImplementedError("""
-This combo %s is not implemented in the "auto" mode. See
-http://gdsctools.readthedocs.io/en/master/anova_parttwo.html for available
-combos of variables. In short, MSI must be included. Note, however that
-if you wish to use your own formula, you can set it in
-settings.regression_formula ; this is simply be slower as compared to the 
-standard regression. Here is an example of a formula: 
+                This combo %s is not implemented in the "auto" mode. See
+                http://gdsctools.readthedocs.io/en/master/anova_parttwo.html for available
+                combos of variables. In short, MSI must be included. Note, however that
+                if you wish to use your own formula, you can set it in
+                settings.regression_formula ; this is simply be slower as compared to the 
+                standard regression. Here is an example of a formula: 
 
-Y ~ C(tissue) + C(media) + feature
+                Y ~ C(tissue) + C(media) + feature
 
-""" % modes)
+                """ % modes)
         arr[0, 0] = 1                   # intercept
 
         self._debug_arr = arr
@@ -677,14 +680,15 @@ Y ~ C(tissue) + C(media) + feature
         Fvalues = mean_sq / (data_lm.ssr / data_lm.df_resid)
         F_pvalues = scipy.stats.f.sf(Fvalues, dof, data_lm.df_resid)
 
-        sum_sq = np.append(sum_sq, data_lm.ssr)
-        mean_sq = np.append(mean_sq, data_lm.mse_resid)
         F_pvalues = np.append(F_pvalues, None)
-        Fvalues = np.append(Fvalues, None)
-        dof.append(data_lm.model.df_resid)
+
         #indices.append('Residuals')
         # dataframe is slow, return just the dict of pvalues by default
         if output == 'dataframe':
+            sum_sq = np.append(sum_sq, data_lm.ssr)
+            mean_sq = np.append(mean_sq, data_lm.mse_resid)
+            Fvalues = np.append(Fvalues, None)
+            dof.append(data_lm.model.df_resid)
             anova = pd.DataFrame({
                                 'Sum Sq': sum_sq,
                                 'Mean Sq': mean_sq,
@@ -710,7 +714,7 @@ Y ~ C(tissue) + C(media) + feature
         else:
             return {'feature': F_pvalues[0]}
 
-    def anova_one_drug(self, drug_id, animate=True, output='object'):
+    def anova_one_drug(self, drug_id, animate=True, output='object', append_drug_annotations=True):
         """Computes ANOVA for a given drug across all features
 
         :param str drug_id: a valid drug identifier.
@@ -730,7 +734,7 @@ Y ~ C(tissue) + C(media) + feature
 
         features = features[features.columns[shift:]]
         # FIXME what about features with less than 3 zeros ?
-        mask = features.sum(axis=0) >= 3
+        mask = (features.sum(axis=0) >= 3) & (features.sum(axis=0) <= len(features) - 3)
 
         # TODO: MSI, tissues, name must always be kept
         #
@@ -739,7 +743,8 @@ Y ~ C(tissue) + C(media) + feature
         # scan all features for a given drug
         assert drug_id in self.ic50.df.columns
         N = len(selected_features.columns)
-        pb = Progress(N, 10)
+        if animate:
+            pb = Progress(N, 10)
         res = {}
         #
         for i, feature in enumerate(selected_features.columns):
@@ -750,20 +755,18 @@ Y ~ C(tissue) + C(media) + feature
                     production=True)
             if this['ANOVA_FEATURE_pval'] is not None:
                 res[feature] = this
-            if animate is True:
+            if animate:
                 pb.animate(i+1)
 
         # if production is False:
         # df = pid.concat(res, ignore_index=True)
-        df = pd.DataFrame.from_records(res)
-        df = df.T
-
-        df = ANOVAResults().astype(df)
+        df = pd.DataFrame.from_dict(res, orient='index').apply(pd.to_numeric, errors='ignore')
         if len(df) == 0:
             return df
 
         # append DRUG_NAME/DRUG_TARGET columns
-        df = self.drug_decode.drug_annotations(df)
+        if append_drug_annotations:
+            df = self.drug_decode.drug_annotations(df)
 
         # TODO: drop rows where ANOVA_FEATURE_PVAL is None
         if output != 'object':
@@ -811,11 +814,11 @@ Y ~ C(tissue) + C(media) + feature
             # todo: check valifity of the drug names
             drug_names = drugs[:]
 
-        pb = Progress(len(drug_names), 1)
         drug_names = list(drug_names)
         #pylab.shuffle(drug_names) # ? why
 
         if animate is True:
+            pb = Progress(len(drug_names), 1)
             pb.animate(0)
 
         if multicore:

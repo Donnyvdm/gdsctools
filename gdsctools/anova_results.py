@@ -249,8 +249,9 @@ class ANOVAResults(object):
         try:
             # does not work in python3.3 on travis but should work
             # we newer pandas version.
-            df = df.apply(lambda x: pd.to_numeric(x, errors='ignore'))
+            df = df.apply(pd.to_numeric, errors='ignore')
         except:
+            print("Hitting the GDSCTools except")
             for col in df.columns:
                 if col in self.mapping.keys():
                     df[col] = df[col].astype(self.mapping[col])
